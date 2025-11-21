@@ -86,25 +86,37 @@ const SendMoney=async(req,res)=>{
             await trans.save();
             return res.status(400).json({message:"Insufficient Balance",success:false})
         }
-        await Account.updateOne(
-            { accountNumber: userAccount.accountNumber },
-            { $inc: { balance: -money } }
-        );
-        await Account.updateOne(
-            { accountNumber: receiveracc.accountNumber },
-            { $inc: { balance: money } }
-        );
-        const transtwo = new TransactionHistory({
-            senderId: userAccount.accountNumber,
-            receiverId: receiveracc.accountNumber,
-            money: money,
-            status: "Success"
-        });
-        await transtwo.save();
-        return res.status(200).json({
-            message: "Money Sent Successfully",
-            success: true
-        });
+        const session=await mongoose.startSession();
+        session.startTransaction();
+        try{
+            await Account.updateOne(
+                {accountNumber:userAccount.accountNumber},
+                {$inc:{balance:-money}},{session}
+            );
+            await Account.updateOne(
+                {accountNumber:receiveracc.accountNumber},
+                {$inc:{balance:money}},{session}
+            );
+            const trans2=new TransactionHistory({
+                senderId:userAccount.accountNumber,
+                receiverId:receiveracc.accountNumber,
+                money:money,status:"Success"}
+            );
+            await trans2.save({session});
+            await session.commitTransaction();
+            session.endSession();
+            return res.status(200).json({
+                message:"Money Sent Successfully",
+                success:true
+            });
+        }catch(err){
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(500).json({
+                message:"Transaction Failed",
+                success:false
+            });
+        }
     }catch(err){
         return res.status(500).json({
             message:"Internal Server Error",
