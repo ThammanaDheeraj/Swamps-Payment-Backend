@@ -80,7 +80,45 @@ const login=async (req,res)=>{
     }
 }
 
+const updatePass=async (req,res)=>{
+    const {_id}=req.user;
+    const {password,newpassword,retypepassword}=req.body;
+    if(!password || !newpassword || !retypepassword){
+        return res.status(400).json({
+            message:"All fields are required",
+            success:false
+        });
+    }
+    try{
+        const user=await User.findById({_id});
+        const success=await bcrypt.compare(password,user.password);
+        if(!success){
+            return res.status(400).json({
+                message:"Password doesn't match"
+            });
+        }
+        if(newpassword !== retypepassword){
+            return res.status(400).json({
+                message:"NewPassword and RetypePassword doesn't match",
+                success:false
+            });
+        }
+        const newhashpassword=await bcrypt.hash(newpassword,10);
+        await User.updateOne({_id},{$set:{password:newhashpassword}});
+        return res.status(200).json({
+            message:"Password Updated Successfully",
+            success:true
+        });
+    }catch(err){
+        return res.status(500).json({
+            message:"Internal Server Error",
+            success:false
+        });
+    }
+}
+
 module.exports={
     signup,
-    login
+    login,
+    updatePass
 }
