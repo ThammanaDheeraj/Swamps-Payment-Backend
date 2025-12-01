@@ -69,6 +69,13 @@ const SendMoney=async(req,res)=>{
         return res.status(400).json({message:"Invalid Amount"})
     } 
     try{
+        if(receiver==userAccount.accountNumber){
+            return res.status(400).json({
+                message:"Money Can't be Trasferred",
+                success:false
+            })
+        }
+        console.log("Dheeraj");
         const receiveracc=await Account.findOne({accountNumber:receiver});
         if(!receiveracc){
             return res.status(400).json({
