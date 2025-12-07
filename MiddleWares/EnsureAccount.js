@@ -3,7 +3,7 @@ const Account=require('../Models/Account');
 const EnsureAccount=async (req,res,next)=>{
     const id=req.user._id;
     try{
-        const account=await Account.findOne({userId:id});
+        const account=await Account.findOne({userId:id,primary:true});
         if(!account){
             return res.status(400).json({
                 message:"User Dosen't have any account",
